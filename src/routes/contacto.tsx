@@ -13,7 +13,7 @@ const d = "Escribinos y coordinemos el traslado para tu institución, evento o v
 
 export const Route = createFileRoute("/contacto")({
   validateSearch: (s: Record<string, unknown>): { servicio?: ServiceOption } => {
-    const v = s.servicio;
+    const v = s["servicio"];
     return SERVICE_OPTIONS.includes(v as ServiceOption) ? { servicio: v as ServiceOption } : {};
   },
   head: () => ({ meta: [{ title: t }, { name: "description", content: d }, { property: "og:title", content: t }, { property: "og:description", content: d }] }),
