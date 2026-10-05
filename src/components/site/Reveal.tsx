@@ -6,14 +6,20 @@ export function useInView<T extends Element>() {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    // Already on screen (or above it, e.g. after a fast scroll / anchor jump): show immediately.
+    const r = el.getBoundingClientRect();
+    if (r.top < window.innerHeight || typeof IntersectionObserver === "undefined") {
+      setVisible(true);
+      return;
+    }
     const io = new IntersectionObserver(
       ([e]) => {
-        if (e?.isIntersecting) {
+        if (e && (e.isIntersecting || e.boundingClientRect.top < 0)) {
           setVisible(true);
           io.disconnect();
         }
       },
-      { threshold: 0.15 },
+      { rootMargin: "0px 0px 10% 0px", threshold: 0 },
     );
     io.observe(el);
     return () => io.disconnect();
@@ -35,7 +41,7 @@ export function Reveal({
     <div
       ref={ref}
       className={`reveal ${visible ? "is-visible" : ""} ${className}`}
-      style={{ transitionDelay: `${delay}ms` }}
+      style={{ transitionDelay: visible ? `${Math.min(delay, 240)}ms` : "0ms" }}
     >
       {children}
     </div>
@@ -44,7 +50,7 @@ export function Reveal({
 
 export function Counter({ to, prefix = "" }: { to: number; prefix?: string }) {
   const { ref, visible } = useInView<HTMLSpanElement>();
-  const [n, setN] = useState(0);
+  const [n, setN] = useState(to);
   useEffect(() => {
     if (!visible) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -54,7 +60,7 @@ export function Counter({ to, prefix = "" }: { to: number; prefix?: string }) {
     const start = performance.now();
     let raf = 0;
     const tick = (t: number) => {
-      const p = Math.min(1, (t - start) / 1400);
+      const p = Math.min(1, (t - start) / 1200);
       setN(Math.round(to * (1 - Math.pow(1 - p, 3))));
       if (p < 1) raf = requestAnimationFrame(tick);
     };
